@@ -54,4 +54,23 @@ void main() {
     expect(wasteItem.imageURL, '');
     expect(wasteItem.description, '');
   });
+
+  test('WasteItem should correctly represent all fields', () {
+    final now = DateTime.now();
+    final item = WasteItem(
+      date: now,
+      imageURL: 'url',
+      quantity: 10,
+      description: 'Test',
+      latitude: 1.0,
+      longitude: 2.0,
+    );
+
+    expect(item.date, now);
+    expect(item.imageURL, 'url');
+    expect(item.quantity, 10);
+    expect(item.description, 'Test');
+    expect(item.latitude, 1.0);
+    expect(item.longitude, 2.0);
+  });
 }

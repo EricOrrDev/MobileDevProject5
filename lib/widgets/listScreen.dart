@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/waste_item.dart';
 import '../data/json_waste_store.dart';
+import 'new_post_screen.dart';
+import 'waste_list/listItem.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -67,24 +68,7 @@ class _ListScreenState extends State<ListScreen> {
             return ListView.builder(
               itemCount: items.length,
               itemBuilder: (context, index) {
-                final item = items[index];
-                final dateFormatted = DateFormat(
-                  'EEEE, MMMM d, y',
-                ).format(item.date);
-                return Semantics(
-                  label:
-                      'Waste post from $dateFormatted with ${item.quantity} items',
-                  child: ListTile(
-                    title: Text(dateFormatted),
-                    trailing: Text(
-                      item.quantity.toString(),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    onTap: () {
-                      // Navigate to Detail Screen
-                    },
-                  ),
-                );
+                return ListItem(item: items[index]);
               },
             );
           }
@@ -96,7 +80,12 @@ class _ListScreenState extends State<ListScreen> {
         button: true,
         child: FloatingActionButton(
           onPressed: () {
-            // Navigate to New Post Screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NewPostScreen()),
+            ).then((_) {
+              _store.loadWasteItems();
+            });
           },
           child: const Icon(Icons.add),
         ),
