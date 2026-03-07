@@ -46,6 +46,14 @@ class JsonWasteStore {
     _itemsController.add(items);
   }
 
+  Future<void> clearWasteItems() async {
+    final file = await _localFile;
+    if (await file.exists()) {
+      await file.delete();
+    }
+    _itemsController.add([]);
+  }
+
   void dispose() {
     _itemsController.close();
   }

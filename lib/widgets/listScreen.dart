@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/waste_item.dart';
 import '../data/json_waste_store.dart';
 import 'new_post_screen.dart';
-import 'waste_list/listItem.dart';
+import 'detail_screen.dart';
+import 'settings_screen.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -44,6 +46,17 @@ class _ListScreenState extends State<ListScreen> {
             return Text('Wasteagram - $total');
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              ).then((_) => _store.loadWasteItems());
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<WasteItem>>(
         stream: _store.wasteItemsStream,
@@ -57,9 +70,9 @@ class _ListScreenState extends State<ListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  Icon(Icons.list_alt, size: 80, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('Waiting for waste data...'),
+                  Text('No waste data found.'),
                 ],
               ),
             );
@@ -68,7 +81,29 @@ class _ListScreenState extends State<ListScreen> {
             return ListView.builder(
               itemCount: items.length,
               itemBuilder: (context, index) {
-                return ListItem(item: items[index]);
+                final item = items[index];
+                final dateFormatted = DateFormat(
+                  'EEEE, MMMM d, y',
+                ).format(item.date);
+                return Semantics(
+                  label:
+                      'Waste post from $dateFormatted with ${item.quantity} items',
+                  child: ListTile(
+                    title: Text(dateFormatted),
+                    trailing: Text(
+                      item.quantity.toString(),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailScreen(item: item),
+                        ),
+                      );
+                    },
+                  ),
+                );
               },
             );
           }
