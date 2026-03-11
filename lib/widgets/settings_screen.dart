@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../data/json_waste_store.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final JsonWasteStore? store;
+  const SettingsScreen({super.key, this.store});
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +60,8 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              final store = JsonWasteStore();
-              await store.clearWasteItems();
+              final activeStore = store ?? JsonWasteStore();
+              await activeStore.clearWasteItems();
               if (context.mounted) {
                 Navigator.of(context).pop(); // Close dialog
                 ScaffoldMessenger.of(context).showSnackBar(

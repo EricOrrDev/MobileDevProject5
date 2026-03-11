@@ -8,7 +8,16 @@ import '../models/waste_item.dart';
 import '../data/json_waste_store.dart';
 
 class NewPostScreen extends StatefulWidget {
-  const NewPostScreen({super.key});
+  final http.Client? httpClient;
+  final Location? locationService;
+  final JsonWasteStore? store;
+
+  const NewPostScreen({
+    super.key,
+    this.httpClient,
+    this.locationService,
+    this.store,
+  });
 
   @override
   _NewPostScreenState createState() => _NewPostScreenState();
@@ -21,23 +30,30 @@ class _NewPostScreenState extends State<NewPostScreen> {
   bool _isLoading = false;
 
   Future<String> _fetchImageUrl(String query) async {
-    final apiKey = dotenv.env['PEXELS_API_KEY'] ?? '';
-    final response = await http.get(
-      Uri.parse('https://api.pexels.com/v1/search?query=$query&per_page=1'),
-      headers: {'Authorization': apiKey},
-    );
+    final client = widget.httpClient ?? http.Client();
+    try {
+      final apiKey = dotenv.env['PEXELS_API_KEY'] ?? '';
+      final response = await client.get(
+        Uri.parse('https://api.pexels.com/v1/search?query=$query&per_page=1'),
+        headers: {'Authorization': apiKey},
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['photos'] != null && data['photos'].isNotEmpty) {
-        return data['photos'][0]['src']['large'];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['photos'] != null && data['photos'].isNotEmpty) {
+          return data['photos'][0]['src']['large'];
+        }
       }
+    } catch (e) {
+      // Log error or handle appropriately
+    } finally {
+      if (widget.httpClient == null) client.close();
     }
     return 'https://via.placeholder.com/600x400?text=No+Image+Found';
   }
 
   Future<LocationData?> _getLocation() async {
-    Location location = Location();
+    final location = widget.locationService ?? Location();
     bool serviceEnabled;
     PermissionStatus permissionGranted;
 
@@ -74,7 +90,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
           longitude: locationData?.longitude ?? 0.0,
         );
 
-        final store = JsonWasteStore();
+        final store = widget.store ?? JsonWasteStore();
         await store.saveWasteItem(newItem);
 
         if (mounted) {
@@ -82,9 +98,9 @@ class _NewPostScreenState extends State<NewPostScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error saving post: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error saving post: $e')));
         }
       } finally {
         if (mounted) {

@@ -16,7 +16,10 @@ class WasteagramApp extends StatelessWidget {
     return MaterialApp(
       title: 'Wasteagram',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
       ),
       home: const ListScreen(),

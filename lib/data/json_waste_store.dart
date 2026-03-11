@@ -5,19 +5,32 @@ import 'package:path_provider/path_provider.dart';
 import '../models/waste_item.dart';
 
 class JsonWasteStore {
-  static const String _fileName = 'waste_items.json';
+  final String fileName;
   final _itemsController = StreamController<List<WasteItem>>.broadcast();
+  List<WasteItem>? _items;
+  String? _cachedPath;
 
-  Stream<List<WasteItem>> get wasteItemsStream => _itemsController.stream;
+  JsonWasteStore({this.fileName = 'waste_items.json'});
+
+  Stream<List<WasteItem>> get wasteItemsStream async* {
+    if (_items != null) {
+      yield List.from(_items!);
+    }
+    yield* _itemsController.stream;
+  }
+  
+  List<WasteItem>? get currentItems => _items;
 
   Future<String> get _localPath async {
+    if (_cachedPath != null) return _cachedPath!;
     final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
+    _cachedPath = directory.path;
+    return _cachedPath!;
   }
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    return File('$path/$_fileName');
+    return File('$path/$fileName');
   }
 
   Future<List<WasteItem>> loadWasteItems() async {
@@ -25,16 +38,24 @@ class JsonWasteStore {
       final file = await _localFile;
       if (await file.exists()) {
         final contents = await file.readAsString();
+        if (contents.isEmpty) {
+          _items = [];
+          _itemsController.add(List.from(_items!));
+          return _items!;
+        }
         final List<dynamic> jsonList = jsonDecode(contents);
         final items = jsonList.map((json) => WasteItem.fromJson(json)).toList();
-        _itemsController.add(items);
-        return items;
+        _items = items;
+        _itemsController.add(List.from(_items!));
+        return _items!;
       }
-      _itemsController.add([]);
-      return [];
+      _items = [];
+      _itemsController.add(List.from(_items!));
+      return _items!;
     } catch (e) {
-      _itemsController.add([]);
-      return [];
+      _items = [];
+      _itemsController.add(List.from(_items!));
+      return _items!;
     }
   }
 
@@ -43,7 +64,8 @@ class JsonWasteStore {
     items.add(item);
     final file = await _localFile;
     await file.writeAsString(jsonEncode(items.map((e) => e.toJson()).toList()));
-    _itemsController.add(items);
+    _items = items;
+    _itemsController.add(List.from(_items!));
   }
 
   Future<void> clearWasteItems() async {
@@ -51,6 +73,7 @@ class JsonWasteStore {
     if (await file.exists()) {
       await file.delete();
     }
+    _items = [];
     _itemsController.add([]);
   }
 

@@ -1,30 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/waste_item.dart';
 import '../data/json_waste_store.dart';
 import 'new_post_screen.dart';
-import 'detail_screen.dart';
 import 'settings_screen.dart';
+import 'waste_list/listItem.dart';
 
 class ListScreen extends StatefulWidget {
-  const ListScreen({super.key});
+  final JsonWasteStore? store;
+  const ListScreen({super.key, this.store});
 
   @override
   _ListScreenState createState() => _ListScreenState();
 }
 
 class _ListScreenState extends State<ListScreen> {
-  final JsonWasteStore _store = JsonWasteStore();
+  late JsonWasteStore _store;
 
   @override
   void initState() {
     super.initState();
+    _store = widget.store ?? JsonWasteStore();
     _store.loadWasteItems();
   }
 
   @override
   void dispose() {
-    _store.dispose();
+    if (widget.store == null) {
+      _store.dispose();
+    }
     super.dispose();
   }
 
@@ -35,9 +38,10 @@ class _ListScreenState extends State<ListScreen> {
         centerTitle: true,
         title: StreamBuilder<List<WasteItem>>(
           stream: _store.wasteItemsStream,
+          initialData: _store.currentItems,
           builder: (context, snapshot) {
             int total = 0;
-            if (snapshot.hasData) {
+            if (snapshot.hasData && snapshot.data != null) {
               total = snapshot.data!.fold(
                 0,
                 (sum, item) => sum + item.quantity,
@@ -60,12 +64,17 @@ class _ListScreenState extends State<ListScreen> {
       ),
       body: StreamBuilder<List<WasteItem>>(
         stream: _store.wasteItemsStream,
+        initialData: _store.currentItems,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error loading data'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          } else if (!snapshot.hasData || snapshot.data == null) {
+            // This happens when _store.currentItems is null (not loaded yet)
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.data!.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -81,29 +90,7 @@ class _ListScreenState extends State<ListScreen> {
             return ListView.builder(
               itemCount: items.length,
               itemBuilder: (context, index) {
-                final item = items[index];
-                final dateFormatted = DateFormat(
-                  'EEEE, MMMM d, y',
-                ).format(item.date);
-                return Semantics(
-                  label:
-                      'Waste post from $dateFormatted with ${item.quantity} items',
-                  child: ListTile(
-                    title: Text(dateFormatted),
-                    trailing: Text(
-                      item.quantity.toString(),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailScreen(item: item),
-                        ),
-                      );
-                    },
-                  ),
-                );
+                return ListItem(item: items[index]);
               },
             );
           }
